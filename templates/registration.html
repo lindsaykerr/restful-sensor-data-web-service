@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ values.title}}</title>
+</head>
+<script>
+function submit_cred() {
+    var email = document.getElementById("email")
+    window.sessionStorage.setItem('client_email', email.value)
+
+}
+</script>
+<body>
+<h1>Client Registration</h1>
+<form method="GET" action="registration/submit" >
+    <div><label>Username:</label><input id="username" name="username" type="text" value=""></div>
+    <div><label>Email:</label><input id="email" name="email" type="email" value=""></div>
+    <div><label>Password:</label><input id="password" name="password" type="password"></div>
+    <div><button id="submit" type="submit" onclick="submit_cred()">Submit</button> <button type="reset">Reset</button></div>
+</form>
+<div>
+    {{values.errors }}
+</div>
+</body>
+<script >
+    if (window.sessionStorage.getItem('client_email')) {
+        var email = document.getElementById("email")
+        email.value = window.sessionStorage.getItem('client_email')
+        email.setAttribute('value',window.sessionStorage.getItem('client_email'))
+    }
+</script>
+</html>

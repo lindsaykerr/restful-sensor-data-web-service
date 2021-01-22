@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome</title>
+</head>
+<body>
+    <h1>Client Page</h1>
+    {% if appkeys.key_list  %}
+    <h2>App keys</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Token</th>
+                <th>Application Identifier</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for key_item in appkeys.key_list %}
+        <tr>
+            <td>{{key_item[0]}}</td>
+            <td>{{key_item[1]}}</td>
+        </tr>
+        {% endfor%}
+        </tbody>
+    </table>
+    {% endif %}
+    {% if appkeys.limit > appkeys.key_list|length %}
+        <h2>Generate application tokens (keys available {{ appkeys.limit - appkeys.key_list|length }})</h2>
+        <form action="generate-app-key" method="POST">
+            <input type="hidden" name="username" value="{{appkeys.user}}">
+            <label for="app-name">Application Identifier: </label><input type="text" name="app-name" required id="app-name">
+            <button name="generate" type="submit">Create Key</button>
+        </form>
+    {% endif %}
+    <a href="../logout">logout</a>
+</body>
+</html>

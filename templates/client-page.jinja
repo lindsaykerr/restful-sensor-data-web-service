@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome</title>
+</head>
+<body>
+
+    <h1>Client Page</h1>
+    {% set adict = appkey.keys %}
+    {% if appkey.keys  %}
+    <h2>App keys</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>App name</th>
+                <th>Key</th>
+                <th>service requests</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for key, values in adict.iteritems() %}
+        <tr>
+            <td>{{key|e}}</td>
+            {% for value in values%}
+            <td>{{value|e}}</td>
+            {% endfor %}
+            <td><button type="submit">remove</button></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% endif %}
+
+
+</body>
+</html>
