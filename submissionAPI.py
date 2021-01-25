@@ -1,8 +1,3 @@
-"""
-Author: Lindsay Kerr
-OUPI: F3424749
-Project: TM470 Web Service solution
-"""
 from flask import Flask
 
 from databases.database_adapter import DatabaseWrapper

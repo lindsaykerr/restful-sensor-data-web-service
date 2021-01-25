@@ -1,9 +1,3 @@
-"""
-Author: Lindsay Kerr
-OUPI: F3424749
-Project: TM470 Web Service solution
-"""
-
 from flask import Flask, request
 from time import sleep
 from utilities.settings import db_server, db_rec_user, SECRET_KEY
