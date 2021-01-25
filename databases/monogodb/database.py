@@ -1,6 +1,6 @@
 import pymongo
-from queries.interfaces.idatabase import IDatabase
-from queries.monogodb.crudcommands import EnviroWSCommands
+from databases.interfaces.idatabase import IDatabase
+from databases.monogodb.crudcommands import EnviroWSCommands
 
 # following line allows the default CRUD strategy to be swapped if needed
 db_crud_strategy = EnviroWSCommands
@@ -33,7 +33,6 @@ class Database(IDatabase):
                 authSource=self.database,
                 # authMechanism='SCRAM-SHA-256'
             )
-            print(self.client)
             return self.client.get_database(self.database)
         except ConnectionError:
             raise ConnectionError("Database connection failure")
@@ -43,9 +42,14 @@ class Database(IDatabase):
         self.client = None
 
     def command(self, command, value):
+        # changes the current collection of a MongoDB database
         if 'change_collection' == command:
             self.queries.set_collection(value)
+
+        # batch submit multiple records into collection
         elif 'batch_submit' == command:
             self.queries.batch_submit(value)
+
+        # delete all records from a given collection
         elif 'delete_all_records' == command:
             self.queries.delete_all_records(value)

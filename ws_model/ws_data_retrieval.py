@@ -34,7 +34,8 @@ class DataRetrieval:
             else:
                 requested = {
                     'status': 'success',
-                    'data': self.db.read_one(self.query.location_info()),
+                    'data': self.db.read_one(
+                        self.query.location_info(location)),
                     'location': location
                 }
         else:
@@ -48,7 +49,9 @@ class DataRetrieval:
             self.query.set_query_device(device_id)
 
             if device_id:
-                q_result = self.db.read_one(self.query.location_measurements())
+                q_result = self.db.read_one(
+                    self.query.location_measurements(device_id)
+                )
                 q_result = q_result['measures']
                 requested = {'status': 'success', 'data': q_result}
             else:
@@ -58,7 +61,7 @@ class DataRetrieval:
 
         return requested
 
-    def location_measurement_records(self, location, measurement):
+    def location_measurement_records(self, location: str, measurement: str):
         """
         Provides the data acquired at a location for a specific measure
         :param location: String
@@ -68,95 +71,85 @@ class DataRetrieval:
         if not self._valid_token():
             return render_template('403.html'), 403
 
-        measurement = measurement.upper()
-        self.query.set_query_location(measurement)
-
         device_id = self._get_device_id(location)
-        self.query.set_query_device(device_id)
-
         if not device_id:
-            return {'status': 'failure'}
+            return {
+                'status': 'failure',
+                'client_error': 'device location unknown'
+            }
 
-        # check to see if the client has entered any parameters
+        # check for and validate query parameters
         if len(request.args) > 0:
-
             query_options = options_from_args(dict(request.args))
-            final_query = self.query.location_measurement_records(
-                device_id,
-                query_options
-            )
+        else:
+            query_options = None
 
-            # if None is returned client has entered an incorrect parameter key
+            '''
             if query_options is None:
                 return {'status': 'failure',
                         'client_error': 'invalid filter parameter',
                         'measure': measurement}
+            '''
 
-            if 'interval' in request.args:
-                q_result = self.db.group_by(final_query)
+        # if a user defines a time interval, data will be aggregated
+        if query_options and 'interval' in query_options:
+            q_result = self.db.group_by(self.query.location_measurement_records(
+                device_id,
+                measurement,
+                query_options
+            ))
 
-                '''
-                q_result = db.aggregate(
-                    'data',
-                    query_1,
-                    group_by_interval(request.args, measurement)
-                )
-                '''
-                # return a failure if the incorrect interval value  was provided
-                if not q_result:
-                    return {'status': 'failure',
-                            'client_error': 'incorrect interval value',
-                            'measure': measurement}
-
-                # the following line extracts each record document from the
-                # aggregated data and places them in a list, this done to
-                # prevent an error being raised when data is returned to the
-                # client
-                q_result = [doc for doc in q_result]
-
-                # format the data before giving it to the client
-                # Todo the following must be refactored as it is too Mongodb
-                #  specific
+            if q_result:
                 for doc in q_result:
                     # round of calculated averages
-                    doc['avg'] = round(doc['avg'], 2)
-                    # remove the mongoDB document id
+                    doc['avg'] = doc['avg']
+                    doc['timestamp'] = doc['datetime']
+                    # remove unused data
                     del doc['_id']
-                    # rename the date/Time value holder
-                    doc['timestamp'] = doc['ISODate']
-                    del doc['ISODate']
+                    del doc['datetime']
+                return {
+                    'status': 'success',
+                    'measure': measurement,
+                    'data': q_result
+                }
+            else:
+                return {
+                    'status': 'failure',
+                    'client_error': 'incorrect interval value',
+                    'measure': measurement}
 
-                return {'status': 'success', 'measure': measurement,
-                        'data': q_result}
-
-        q_result = self.db.read_many(self.location_measurement_records(
+        q_result = self.db.read_many(self.query.location_measurement_records(
             device_id,
-            None)
-        )
-        # formats the data before sending it to client
-        for doc in q_result:
-            # move nested stats to root level of the document
-            doc.update(doc[measurement])
-            # remove the record which contains the nested stats
-            del doc[measurement]
-            doc['timestamp'] = doc['datetime']
-            del doc['datetime']
+            measurement,
+            query_options
+        ))
+        if q_result:
+            # formats the data before sending it to client
+            x = 0
+            while x < len(q_result):
+                q_result[x].update(q_result[x]['data'])
+                q_result[x]['timestamp'] = q_result[x]['datetime']
+                del q_result[x]['data']
+                del q_result[x]['datetime']
+                x += 1
 
-        return {'status': 'success', 'measure': measurement, 'data': q_result}
+            return {'status': 'success', 'data': q_result}
+        else:
+            return {'status': 'nothing found'}
 
     def _valid_token(self):
         # check the authorisation header for key values
         auth = request.headers.get('authorization')
+
         if not auth:
             return False
         # match the expected value format of the authorization header
         # i.e. Bearer tokenkey
         matched = re.match(r'^([^ ]+) *([^ ]+)$', auth)
         if matched and matched.group(1).lower() == 'bearer':
-
             # encode the token to bytecode, as tokens in the db are also
             # in bytecode
-            token = matched.group(2).encode()
+            token = matched.group(2)
             # check to see if the token exists
             result = self.db.read_one(self.query.search_for_token(token))
             if result:
@@ -164,4 +157,4 @@ class DataRetrieval:
         return False
 
     def _get_device_id(self, location):
-        return get_device_id(location, self.db, self.query)
+        return get_device_id(location, db=self.db, query=self.query)

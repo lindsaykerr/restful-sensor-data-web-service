@@ -5,9 +5,9 @@ Project: TM470 Web Service solution
 """
 from flask import Flask
 
-from queries.database_adapter import DatabaseWrapper
-from queries.monogodb.database import Database
-from queries.monogodb.wsqueries import EnviroWSQueries
+from databases.database_adapter import DatabaseWrapper
+from databases.monogodb.database import Database
+from databases.monogodb.wsqueries import EnviroWSQueries
 from utilities.validation import WSMongoValidateSubmit
 from utilities.settings import db_server, db_sub_user
 from ws_model.ws_data_submission import DataSubmission

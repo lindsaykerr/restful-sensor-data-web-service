@@ -2,12 +2,18 @@ import jwt
 from flask import render_template, request, redirect, session
 
 
+def valid_session(username):
+    if not ("username" in session and username == session['username']):
+        session.pop('username', None)
+        return False
+    return True
+
+
 class ClientOperations:
 
     def __init__(self, database_obj, query_obj):
         self.db = database_obj
         self.query = query_obj
-
 
     def client_registration(self):
         values = {'title': 'Client Registration', 'errors': ""}
@@ -75,41 +81,31 @@ class ClientOperations:
             results = self.db.read_many(self.query.retrieve_client_tokens(
                 username)
             )
+            print("client page", results)
             appkeys = {'key_list': [], 'user': username, 'limit': 3}
 
             # build a list of tokens and related app identifier
             for result in results:
                 appkeys['key_list'].append(
-                    [result['token'].decode('utf-8'), result['app_name']])
+                    [result['token'], result['app_name']])
 
             return render_template("client-page.html", appkeys=appkeys)
         else:
             return render_template('403.html'), 403
 
-    def gen_token(self, secret):
-        # if there no active session respond with 403 code
-        if not ('username' in session):
-            return render_template('403.html'), 403
+    def gen_token(self, secret, username, app_label):
 
-        # if the session username and username from the request form do not match
-        # remove the session and respond with a 403 error code
-        if not (request.form['username'] and
-                request.form['username'] == session['username']):
-            session.pop('username', None)
-            return render_template('403.html'), 403
-
-        # a username and app identifier is required
-        if request.form['username'] and request.form['app-name']:
-
-            username = request.form['username'].strip(" ")
-            app_name = request.form['app-name'].strip(" ")
-
+        if username and app_label:
             # get a list of tokens which are assigned to a specific username
-            token_list = self.db.read_one(
+
+            token_list = self.db.read_many(
                 self.query.retrieve_client_tokens(username)
             )
 
             # determine how many tokens exist within the db
+            if not token_list:
+                token_list = []
+
             token_count = len(token_list)
 
             # only create a limited number of tokens
@@ -119,19 +115,19 @@ class ClientOperations:
                 token = jwt.encode(
                     {
                         'username': username,
-                        'app_name': app_name,
+                        'app_label': app_label,
                         'app_num': token_count + 1
                     },
                     secret,
                     algorithm='HS256'
                 )
                 # insert the token into the token collection
-                x = self.db.create_one(self.query.add_client_token(
+                result = self.db.create_one(self.query.add_client_token(
                     username,
-                    app_name,
+                    app_label,
                     token)
                 )
-                if not x:
+                if not result:
                     return 'token submission failure'
 
             # return to the client page
@@ -142,15 +138,13 @@ class ClientOperations:
     def client_login(self):
         return render_template("login.html")
 
-    def login_auth(self):
-        if request.form['username'] and request.form['password']:
-
-            username = request.form['username'].strip(" ")
-            passwrd = request.form['password'].strip(" ")
+    def login_auth(self, username, password):
+        if username and password:
 
             q_result = self.db.read_one(self.query.client_details_request(
-                username=username, password=passwrd)
+                username=username, password=password)
             )
+            #print(q_result)
             if q_result:
                 session['username'] = username
                 return redirect("/api/v1/client/" + username, code=307)

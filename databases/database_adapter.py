@@ -1,4 +1,4 @@
-from queries.interfaces.icrudcommands import ICRUDCommands
+from databases.interfaces.icrudcommands import ICRUDCommands
 
 
 class DatabaseWrapper(ICRUDCommands):
@@ -30,7 +30,7 @@ class DatabaseWrapper(ICRUDCommands):
             return self.database.queries.read_one(query_parameters)
         except Exception:
             print("Database read failed!")
-            return []
+            return None
 
     def read_many(self, query_parameters) -> list:
         try:
@@ -69,7 +69,7 @@ class DatabaseWrapper(ICRUDCommands):
 
     def group_by(self, query_parameters):
         try:
-            self.database.queries.group_by(query_parameters)
+            return self.database.queries.group_by(query_parameters)
         except:
             print("Database group by read operation failed")
 

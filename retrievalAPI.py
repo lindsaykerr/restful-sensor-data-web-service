@@ -4,16 +4,18 @@ OUPI: F3424749
 Project: TM470 Web Service solution
 """
 
-from flask import Flask
+from flask import Flask, request
+from time import sleep
 from utilities.settings import db_server, db_rec_user, SECRET_KEY
+from utilities.sanitize import Sanitize
 # from utilities.logger import *
-from queries.database_adapter import DatabaseWrapper
-# if another database type is used, then exchange 'queries,mongodb' for
-# 'queries.type'
-from queries.monogodb.wsqueries import EnviroWSQueries
-from queries.monogodb.database import Database
+from databases.database_adapter import DatabaseWrapper
+# if another database type is used, then exchange 'databases,mongodb' for
+# 'databases.type'
+from databases.monogodb.wsqueries import EnviroWSQueries
+from databases.monogodb.database import Database
 from ws_model.ws_data_retrieval import DataRetrieval
-from ws_model.ws_client_operations import ClientOperations
+from ws_model.ws_client_operations import ClientOperations, valid_session
 
 app = Flask(__name__)
 
@@ -60,7 +62,7 @@ def location_measurement_records(location, measurement):
     """
     Provides the data acquired at a location for a specific measure
     """
-    return retrieve.location_measurement_records(location, measurement)
+    return retrieve.location_measurement_records(location, measurement.upper())
 
 
 #####
@@ -93,7 +95,17 @@ def client_page(username):
 
 @app.route("/api/v1/client/generate-app-key", methods=['POST'])
 def gen_token():
-    return client.gen_token(SECRET_KEY)
+
+    username = None
+    app_label = None
+
+    if "app-label" in request.form and "username" in request.form:
+        username = Sanitize.scrub_form_input(request.form["username"])
+
+        if valid_session(username):
+            app_label = Sanitize.scrub_form_input(request.form["app-label"])
+
+    return client.gen_token(SECRET_KEY, username, app_label)
 
 
 @app.route("/api/v1/login", methods=['GET'])
@@ -103,7 +115,16 @@ def client_login():
 
 @app.route("/api/v1/login-auth", methods=['POST'])
 def login_auth():
-    return client.client_login()
+    if 'username' in request.form and 'password' in request.form:
+        username = Sanitize.scrub_form_input(request.form['username'])
+        password = Sanitize.scrub_form_input(request.form['password'])
+    else:
+        username = None
+        password = None
+
+    sleep(.5)
+
+    return client.login_auth(username, password)
 
 
 @app.route("/api/v1/logout")
@@ -111,5 +132,8 @@ def client_logout():
     return client.client_logout()
 
 
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
+
+

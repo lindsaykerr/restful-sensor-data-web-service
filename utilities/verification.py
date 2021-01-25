@@ -14,7 +14,7 @@ def verify_device(db_obj, query_obj, device) -> bool:
         return False
 
 
-def get_device_id(location, db_obj, query_obj):
+def get_device_id(location, db, query):
     """
     Checks to see if a device has the same id as that recorded within the
     db
@@ -23,8 +23,7 @@ def get_device_id(location, db_obj, query_obj):
     :param location:
     :return: device_id
     """
-    result = db_obj.read_one(query_obj.device_id(location))
-
+    result = db.read_one(query.get_device_id(location))
     if result:
         return result['device_id']
     else:

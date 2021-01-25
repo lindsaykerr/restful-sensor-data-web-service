@@ -1,7 +1,7 @@
 from abc import ABC
 
-from queries.interfaces.iwsqueries import *
-from datetime import timedelta
+from databases.interfaces.iwsqueries import *
+from datetime import timedelta, datetime
 import hashlib
 
 
@@ -41,7 +41,7 @@ class EnviroWSQueries(IWSQueries, ABC):
     def get_device_id(self, location):
         return {
             'collection': self.collection['DEVICES'],
-            'query': {'location': location, 'device_data': 'accessible'},
+            'match': {'location': location, 'device_data': 'accessible'},
             'projection': {'device_id': 1, '_id': 0}
         }
 
@@ -66,20 +66,21 @@ class EnviroWSQueries(IWSQueries, ABC):
             'projection': {'_id': 0, 'measures': 1}
         }
 
-    def location_measurement_records(self, device, params=None):
+    def location_measurement_records(self, device, measurement, params=None):
         query = {
             'collection': self.collection['DATA'],
             'match': {'device_id': device},
-            'projection': {'_id': 0, 'datetime': 1, self.measurement: 1}
+            'projection': {'_id': 0, 'datetime': 1, "data." + measurement: 1}
         }
 
         if params:
-            # group is only used when aggregating data
-            if params["$group"]:
-                query["match"] = {'$match:': query["match"]}
-            query["match"] = {
-                **query["match"],
-                **(self.process_query_options(params))}
+            for_match, for_group = self.process_query_options(
+                params, measurement.upper()
+            )
+            if for_match:
+                query['match'] = {**query["match"], **for_match}
+            if for_group:
+                query["group"] = for_group
 
         return query
 
@@ -89,48 +90,50 @@ class EnviroWSQueries(IWSQueries, ABC):
             'match': query_data
         }
 
-    def process_query_options(self, options: dict):
-        time_to = None
-        time_from = None
-        query_options = None
-        group = None
+    def process_query_options(self, options: dict, measurement):
 
-        if not options["from"] is None:
-            time_from = {'datetime': {'$gt': options["from"]}}
-        if not options["to"] is None:
-            date_value = options["to"] + timedelta(days=1)
-            time_to = {'datetime': {'$lt': date_value}}
-
-        if options["interval"] is not None:
-            if options['interval'] == 'day':
-                group = {'$dayOfYear': '$datetime'}
-            elif options['interval'] == 'week':
-                group = {'$week': '$datetime'}
-            elif options['interval'] == 'month':
-                group = {'$month': '$datetime'}
-            elif options['interval'] == 'hour':
-                group = {'day': {'$dayOfYear': '$datetime'},
-                         'hour': {'$hour': '$datetime'}}
-            if group:
-                query_options["group"] = {
-                    '$group': {
-                        '_id': group,
-                        'ISODate': {'$max': '$datetime'},
-                        'avg': {'$avg': f'${self.measurement}.avg'},
-                        'min': {'$min': f'${self.measurement}.min'},
-                        'max': {'$max': f'${self.measurement}.max'}
+        for_match = None
+        for_group = None
+        if "from" in options and options["from"] and "to" in options and options["to"]:
+            if (isinstance(options["from"], datetime)) and \
+                    (isinstance(options["to"], datetime)):
+                    for_match = {
+                        '$and': [
+                            {'datetime': {'$gt': options["from"]}},
+                            {'datetime': {
+                                '$lt': options["to"] + timedelta(days=1)
+                            }}
+                        ]
                     }
+        elif "from" in options and options["from"]:
+
+            for_match = {'datetime': {'$gt': options["from"]}}
+        elif "to" in options and \
+                options["to"] and \
+                isinstance(options["to"], datetime):
+            for_match = {'datetime': {'$lt': options["to"] + timedelta(days=1)}}
+
+        if "interval" in options:
+            if options['interval'] == 'day':
+                for_group = {'$dayOfYear': '$datetime'}
+            elif options['interval'] == 'week':
+                for_group = {'$week': '$datetime'}
+            elif options['interval'] == 'month':
+                for_group = {'$month': '$datetime'}
+            elif options['interval'] == 'hour':
+                for_group = {'day': {'$dayOfYear': '$datetime'},
+                         'hour': {'$hour': '$datetime'}}
+
+            if for_group:
+                for_group = {
+                        '_id': for_group,
+                        'datetime': {'$max': '$datetime'},
+                        'avg': {'$avg': f'$data.{measurement}'},
+                        'min': {'$min': f'$data.{measurement}'},
+                        'max': {'$max': f'$data.{measurement}'}
                 }
 
-        if time_to or time_from:
-            if time_to and time_from:
-                query_options = {'$and': [time_from, time_to]}
-            elif time_to:
-                query_options = time_to
-            else:
-                query_options = time_from
-
-        return query_options
+        return for_match, for_group
 
     def submission_validation_params(self):
         return {
@@ -182,7 +185,7 @@ class EnviroWSQueries(IWSQueries, ABC):
             }
         }
 
-    def search_for_token(self, token):
+    def search_for_token(self, token: str):
         return {
             'collection': self.collection['TOKEN_KEYS'],
             'match': {'token': token}

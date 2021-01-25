@@ -1,9 +1,10 @@
-from utilities.settings import db_rec_user, db_server, db_sub_user
-from queries.database_adapter import DatabaseWrapper
-from queries.monogodb.database import Database
-from queries.monogodb.wsqueries import EnviroWSQueries
+from utilities.settings import db_server
+from databases.database_adapter import DatabaseWrapper
+from databases.monogodb.database import Database
+from databases.monogodb.wsqueries import EnviroWSQueries
 from datetime import datetime
 
+# The following script populates the mongoDB database for query testing
 
 db = DatabaseWrapper()
 db.set_database(Database(
@@ -14,8 +15,8 @@ db.set_database(Database(
 ))
 
 query = EnviroWSQueries()
-db.command("remove_collection", "devices")
-db.command("remove_collection", "data")
+db.command("delete_all_records", "devices")
+db.command("delete_all_records", "data")
 
 data_list = [
     {
@@ -76,7 +77,7 @@ data_list = [
             "F": 0,
             "message": ""
         },
-        "ISODate": datetime.utcnow()
+        "datetime": datetime.utcnow()
     },
     {
         "device_id": "001",
@@ -85,7 +86,7 @@ data_list = [
             "B": 2,
             "C": 3
         },
-        "ISODate": datetime.utcnow()
+        "datetime": datetime.utcnow()
     },
     {
         "device_id": "002",
@@ -95,7 +96,7 @@ data_list = [
             "C": 3,
             "D": 4
         },
-        "ISODate": datetime.utcnow()
+        "datetime": datetime.utcnow()
     },
     {
         "device_id": "001",
@@ -104,7 +105,7 @@ data_list = [
             "B": 20,
             "C": 30
         },
-        "ISODate": datetime.utcnow()
+        "datetime": datetime.utcnow()
     },
     {
         "device_id": "001",
@@ -113,7 +114,7 @@ data_list = [
             "B": 2.2,
             "C": 3.3
         },
-        "ISODate": datetime.utcnow()
+        "datetime": datetime.utcnow()
     },
     {
         "device_id": "004",
@@ -122,7 +123,7 @@ data_list = [
             "C": 3,
             "message": "this should be hidden"
         },
-        "ISODate": datetime.utcnow()
+        "datetime": datetime.utcnow()
     },
     {
         "device_id": "005",
@@ -131,7 +132,7 @@ data_list = [
             "C": 3,
             "E": 0.000000012344
         },
-        "ISODate": datetime.utcnow()
+        "datetime": datetime.utcnow()
     },
 
 ]

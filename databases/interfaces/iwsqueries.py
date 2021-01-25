@@ -2,7 +2,15 @@ from abc import abstractmethod
 
 
 class IWSQueries:
+    """
+    This interface provides a commons set of database databases used by the CRUD
+    operations. For each query class which implements this interface, each
+    method is intended to return a query which is specific to the database
+    being used.
 
+    This interface has the potential to be modified by developers during a
+    projects life cycle.
+    """
     @abstractmethod
     def verify_device(self, device):
         pass
@@ -28,7 +36,7 @@ class IWSQueries:
         pass
 
     @abstractmethod
-    def process_query_options(self, options):
+    def process_query_options(self, options, measurement):
         pass
 
     @abstractmethod

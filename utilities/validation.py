@@ -10,7 +10,7 @@ def validate_data(data, query, database_obj, validation_strategy):
 
 
 def options_from_args(request_args):
-    options = {"form": None, "to": None}
+    options = {"from": None, "to": None}
 
     if 'from' in request_args:
         try:

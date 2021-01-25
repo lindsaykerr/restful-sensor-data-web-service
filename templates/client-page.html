@@ -30,7 +30,7 @@
         <h2>Generate application tokens (keys available {{ appkeys.limit - appkeys.key_list|length }})</h2>
         <form action="generate-app-key" method="POST">
             <input type="hidden" name="username" value="{{appkeys.user}}">
-            <label for="app-name">Application Identifier: </label><input type="text" name="app-name" required id="app-name">
+            <label for="app-label">Application Identifier: </label><input type="text" name="app-label" required id="app-label">
             <button name="generate" type="submit">Create Key</button>
         </form>
     {% endif %}

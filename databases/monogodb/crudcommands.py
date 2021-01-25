@@ -1,4 +1,4 @@
-from queries.interfaces.icrudcommands import ICRUDCommands
+from databases.interfaces.icrudcommands import ICRUDCommands
 from datetime import datetime
 
 
@@ -21,8 +21,9 @@ class EnviroWSCommands(ICRUDCommands):
                     (query_dict["date_time"] == True):
                 entry['datetime'] = self._date_time(query_dict["date_time"])
 
-        self._col_connect(query_dict).insert_one(entry)
+        result = self._col_connect(query_dict).insert_one(entry)
         self._db_close()
+        return result
 
     def create_many(self, query_dict):
         result = self._col_connect(query_dict).insert_many(query_dict["match"])
@@ -30,19 +31,17 @@ class EnviroWSCommands(ICRUDCommands):
         return result
 
     def read_one(self, query_dict):
-
-        query = query_dict['match']
-        result = self._col_connect(query_dict).find_one(query)
+        q, p = self._get_query_and_projection(query_dict)
+        result = self._col_connect(query_dict).find_one(q, p)
         self._db_close()
         return result
 
 
     def read_many(self, query_dict) -> list:
         q, p = self._get_query_and_projection(query_dict)
-        results = self._col_connect(query_dict).find_many(q, p)
+        results = self._col_connect(query_dict).find(q, p)
         self._db_close()
-        result_list = [i for i in results]
-        return result_list
+        return [i for i in results]
 
     def update_one(self, query_dict):
 
@@ -100,16 +99,18 @@ class EnviroWSCommands(ICRUDCommands):
     def group_by(self, query_dict):
         if "match" in query_dict and "group" in query_dict:
             match = {'$match': query_dict["match"]}
-            group = {'$group': query_dict["group_values"]}
+            group = {'$group': query_dict["group"]}
             if "sort_by" in query_dict:
                 sort = {'$sort': query_dict["sort_by"]}
             else:
-                sort = {'$sort': {'ISODate': 1}}
-            result = self._col_connect(
+                sort = {'$sort': {'datetime': 1}}
+
+            results = self._col_connect(
                 query_dict
             ).aggregate([match, group, sort])
+
             self._db_close()
-            return result
+            return [item for item in results]
 
         return None
 

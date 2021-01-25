@@ -2,7 +2,7 @@
 SECRET_KEY = b'W\xe0]\xabd\x9d\xf9\x15"\xb7\xce<d\xb3\x84"'
 
 db_server = {
-    'host': 'mongodb://<host ip>:27017',
+    'host': 'mongodb://192.168.1.20:27017',
     'db': 'querytesting'
 }
 

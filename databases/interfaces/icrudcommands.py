@@ -2,7 +2,13 @@ from abc import abstractmethod
 
 
 class ICRUDCommands:
+    """
+    This interface provides the standard set of database CRUD commands used
+    by the web service.
 
+    This interface should rarely change regardless of what the web service is
+    being used for.
+    """
     @abstractmethod
     def create_one(self, query_parameters):
         pass
