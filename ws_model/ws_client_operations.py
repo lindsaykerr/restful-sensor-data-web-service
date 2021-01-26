@@ -3,6 +3,12 @@ from flask import render_template, request, redirect, session
 
 
 def valid_session(username):
+    """
+    Determines if there is a current valid session for a given user
+    :param username: a valid username
+    :return: true or false depending on if a session exists or not
+    """
+    # Todo a more elaborate seesion is needed to improve security
     if not ("username" in session and username == session['username']):
         session.pop('username', None)
         return False
@@ -10,8 +16,16 @@ def valid_session(username):
 
 
 class ClientOperations:
-
+    """
+    Provides the bossiness logic for a given URI resource
+    """
     def __init__(self, database_obj, query_obj):
+        """
+        The ClientOperations constructor
+        :param database_obj: an object which implements the ICRUDCommands
+        interface
+        :param query_obj: a
+        """
         self.db = database_obj
         self.query = query_obj
 
@@ -22,51 +36,47 @@ class ClientOperations:
         if len(request.args) > 0 and request.args['error-code']:
             error_val = request.args['error-code']
             if error_val:
-                values['errors'] = 'Credenitials are taken'
+                values['errors'] = 'Credentials are taken'
 
         return render_template('registration.html', values=values)
 
-    def process_client_registration(self):
-        if (len(request.args) == 3) and \
-                (request.args['password']) and \
-                (request.args['email'] and request.args['username']):
-            # strip any white spaces, if any from the ends of the data data
-            password = request.args['password'].strip(" ")
-            username = request.args['username'].strip(" ")
-            email = request.args['email'].strip(" ")
+    def process_client_registration(self, password, username, email):
 
-            # If all form fields were filled in
-            if password and username and email:
+        # If all form fields were filled in
+        if password and username and email:
 
-                # see if the user name already exists
-                q_result1 = self.db.read_one(self.query.client_details_request(
-                    username=username)
-                )
+            # see if the user name already exists
+            q_result1 = self.db.read_one(self.query.client_details_request(
+                username=username)
+            )
 
-                # see if the the hashed version of the email address exists
-                q_result2 = self.db.read_one(self.query.client_details_request(
-                    email=email)
-                )
-                # if either the email or username exists redirect user back to
-                # registration
-                if q_result1 or q_result2:
-                    if q_result1 and q_result2:
-                        code = 1
-                    elif q_result1:
-                        code = 2
-                    else:
-                        code = 3
-                    param = "error-code=" + str(code)
-                    return redirect("/api/v1/registration?" + param)
+            # see if the the hashed version of the email address exists
+            q_result2 = self.db.read_one(self.query.client_details_request(
+                email=email)
+            )
+            # if either the email or username exists redirect user back to
+            # registration
+            if q_result1 or q_result2:
+                if q_result1 and q_result2:
+                    code = 1
+                elif q_result1:
+                    code = 2
                 else:
-                    # register the user
-                    q_result = self.db.create_one(self.query.create_new_client(
-                        username,
-                        email,
-                        password
-                    ))
-                    if q_result:
-                        return redirect('success', user_name=username)
+                    code = 3
+                param = "error-code=" + str(code)
+                return redirect("/api/v1/registration?" + param)
+            else:
+                # Todo code does not comply with GDPR, the email address
+                #  should go through a process of anonymisation
+
+                # register the user
+                q_result = self.db.create_one(self.query.create_new_client(
+                    username,
+                    email,
+                    password
+                ))
+                if q_result:
+                    return redirect('success', user_name=username)
 
         return redirect("/api/v1/registration")
 
