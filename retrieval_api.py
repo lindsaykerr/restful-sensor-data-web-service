@@ -49,7 +49,7 @@ def locations():
     """
     Provides a list of locations which can be queried
     """
-    return retrieve.IoT_locations()
+    return retrieve.locations()
 
 
 @app.route('/api/v1/locations/<location>', methods=['GET'])
@@ -116,7 +116,7 @@ def successful_client_registration():
     """
     User is directed to a page which shows they have been successful registered
     """
-    return client.registration_sucess()
+    return client.registration_success()
 
 
 @app.route("/api/v1/login", methods=['POST'])

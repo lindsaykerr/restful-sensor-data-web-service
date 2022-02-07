@@ -2,11 +2,13 @@ from flask import render_template, request
 import re
 from utilities.validation import *
 from utilities.verification import *
+from databases.interfaces.iwsqueries import IWSQueries
+from databases.interfaces.icrudcommands import ICRUDCommands
 
 
 class DataRetrieval:
 
-    def __init__(self, database_obj, query_obj):
+    def __init__(self, database_obj:ICRUDCommands, query_obj: IWSQueries):
         self.db = database_obj
         self.query = query_obj
 
