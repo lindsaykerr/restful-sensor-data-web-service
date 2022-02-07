@@ -41,7 +41,7 @@ class Database(IDatabase):
         self.client.close()
         self.client = None
 
-    def command(self, command, value):
+    def db_command(self, command, value):
         # changes the current collection of a MongoDB database
         if 'change_collection' == command:
             self.queries.set_collection(value)

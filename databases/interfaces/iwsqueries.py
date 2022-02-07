@@ -11,6 +11,11 @@ class IWSQueries:
     This interface has the potential to be modified by developers during a
     projects life cycle.
     """
+
+    @abstractmethod
+    def set_query_device(self, device):
+        pass
+
     @abstractmethod
     def verify_device(self, device):
         pass

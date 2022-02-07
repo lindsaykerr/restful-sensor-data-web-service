@@ -1,6 +1,6 @@
 from abc import ABC
 
-from databases.interfaces.iwsqueries import *
+from databases.interfaces.iwsqueries import IWSQueries
 from datetime import timedelta, datetime
 import hashlib
 
@@ -66,7 +66,7 @@ class EnviroWSQueries(IWSQueries, ABC):
             'projection': {'_id': 0, 'measures': 1}
         }
 
-    def location_measurement_records(self, device, measurement, params=None):
+    def location_measurement_records(self, device:str, measurement:str, params=None):
         query = {
             'collection': self.collection['DATA'],
             'match': {'device_id': device},
